@@ -395,8 +395,7 @@ cmd() {
                            + str(os.path.basename(job.input_file)) + " "
                            + job.post_args + "\"\n")
         elif job.mapping == 'pele-1-rank-per-gpu':
-            job.script += (" " + job.executable
-                           + str(job.total_ranks) + " "
+            job.script += (" " + job.executable + " "
                            + str(os.path.basename(job.input_file)) + " "
                            + job.post_args + "\"\n")
 
