@@ -370,7 +370,7 @@ cmd() {
                            + " --cpu_per_rs " + str(1)
                            + " --gpu_per_rs " + str(1)
                            + " --rs_per_host " + str(6))
-            job.script += (" " + job.executable
+            job.script += (" " + job.executable + " "
                            + str(os.path.basename(job.input_file)) + " "
                            + job.post_args + "\"\n")
     elif machine == 'crusher' or machine == 'frontier':
