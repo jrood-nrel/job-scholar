@@ -1,0 +1,44 @@
+variables:
+  exawind_input_file: &exawind_input_file '/gpfs/alpine/cfd116/proj-shared/jrood/exawind-scaling/nrel5mw.yaml'
+  amr_wind_input_file: &amr_wind_input_file '/gpfs/alpine/cfd116/proj-shared/jrood/exawind-scaling/nrel5mw_amr.inp'
+  nalu_wind_input_file: &nalu_wind_input_file '/gpfs/alpine/cfd116/proj-shared/jrood/exawind-scaling/nrel5mw_nalu.yaml'
+  amr_wind_static_box: &amr_wind_static_box '/gpfs/alpine/cfd116/proj-shared/jrood/exawind-scaling/static_box.txt'
+  nalu_wind_mesh: &nalu_wind_mesh '/gpfs/alpine/cfd116/proj-shared/jrood/exawind-scaling/mesh/nrel5mw_nearbody.exo'
+  exawind_exe: &exawind_exe 'exawind+amr_wind_gpu+nalu_wind_gpu'
+  exawind_exe_nalu_cpu: &exawind_exe_nalu_cpu 'exawind+amr_wind_gpu~nalu_wind_gpu'
+
+job_set:
+  name: exawind-summit-strong-scaling
+  email: jon.rood@nrel.gov
+  mail_type: NONE
+  project_allocation: CFD116
+  notes: Exawind Summit strong scaling study for single turbine
+  spack_manager: '${PROJWORK}/cfd116/jrood/spack-manager-summit'
+  job_list:
+    # Nalu-Wind scaling
+    - {executable: *exawind_exe, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-all-gpu, compiler: gcc, minutes: 30, nodes: 33, pele_ranks: 0, awind_ranks: 192, nwind_ranks: 6, pre_args:, post_args:}
+    - {executable: *exawind_exe, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-all-gpu, compiler: gcc, minutes: 30, nodes: 34, pele_ranks: 0, awind_ranks: 192, nwind_ranks: 12, pre_args:, post_args:}
+    - {executable: *exawind_exe, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-all-gpu, compiler: gcc, minutes: 30, nodes: 36, pele_ranks: 0, awind_ranks: 192, nwind_ranks: 24, pre_args:, post_args:}
+    - {executable: *exawind_exe, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-all-gpu, compiler: gcc, minutes: 30, nodes: 40, pele_ranks: 0, awind_ranks: 192, nwind_ranks: 48, pre_args:, post_args:}
+    - {executable: *exawind_exe, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-all-gpu, compiler: gcc, minutes: 30, nodes: 48, pele_ranks: 0, awind_ranks: 192, nwind_ranks: 96, pre_args:, post_args:}
+    # AMR-Wind scaling
+    #- {executable: *exawind_exe, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-all-gpu, compiler: gcc, minutes: 30, nodes: 10, pele_ranks: 0,  awind_ranks: 12, nwind_ranks: 48, pre_args:, post_args:}
+    #- {executable: *exawind_exe, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-all-gpu, compiler: gcc, minutes: 30, nodes: 12, pele_ranks: 0,  awind_ranks: 24, nwind_ranks: 48, pre_args:, post_args:}
+    #- {executable: *exawind_exe, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-all-gpu, compiler: gcc, minutes: 30, nodes: 16, pele_ranks: 0,  awind_ranks: 48, nwind_ranks: 48, pre_args:, post_args:}
+    #- {executable: *exawind_exe, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-all-gpu, compiler: gcc, minutes: 30, nodes: 24, pele_ranks: 0,  awind_ranks: 96, nwind_ranks: 48, pre_args:, post_args:}
+    #- {executable: *exawind_exe, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-all-gpu, compiler: gcc, minutes: 30, nodes: 40, pele_ranks: 0,  awind_ranks: 192, nwind_ranks: 48, pre_args:, post_args:}
+    #- {executable: *exawind_exe, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-all-gpu, compiler: gcc, minutes: 30, nodes: 72, pele_ranks: 0,  awind_ranks: 384, nwind_ranks: 48, pre_args:, post_args:}
+    #- {executable: *exawind_exe, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-all-gpu, compiler: gcc, minutes: 30, nodes: 136, pele_ranks: 0, , awind_ranks: 768, nwind_ranks: 48, pre_args:, post_args:}
+    # Exawind scaling all GPU
+    #- {executable: *exawind_exe, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-all-gpu, compiler: gcc, minutes: 60, nodes: 9, pele_ranks: 0, awind_ranks: 48, nwind_ranks: 6, pre_args:, post_args:}
+    #- {executable: *exawind_exe, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-all-gpu, compiler: gcc, minutes: 60, nodes: 18, pele_ranks: 0,  awind_ranks: 96, nwind_ranks: 12, pre_args:, post_args:}
+    #- {executable: *exawind_exe, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-all-gpu, compiler: gcc, minutes: 30, nodes: 36, pele_ranks: 0,  awind_ranks: 192, nwind_ranks: 24, pre_args:, post_args:}
+    #- {executable: *exawind_exe, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-all-gpu, compiler: gcc, minutes: 30, nodes: 72, pele_ranks: 0,  awind_ranks: 384, nwind_ranks: 48, pre_args:, post_args:}
+    #- {executable: *exawind_exe, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-all-gpu, compiler: gcc, minutes: 30, nodes: 144, pele_ranks: 0, awind_ranks: 768, nwind_ranks: 96, pre_args:, post_args:}
+    # Exawind scaling Nalu CPU
+    #- {executable: *exawind_exe_nalu_cpu, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-nalu-cpu, compiler: gcc, minutes: 30, nodes: 4, pele_ranks: 0, awind_ranks: 24, nwind_ranks: 144, pre_args:, post_args:}
+    #- {executable: *exawind_exe_nalu_cpu, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-nalu-cpu, compiler: gcc, minutes: 30, nodes: 8, pele_ranks: 0, awind_ranks: 48, nwind_ranks: 288, pre_args:, post_args:}
+    #- {executable: *exawind_exe_nalu_cpu, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-nalu-cpu, compiler: gcc, minutes: 30, nodes: 16, pele_ranks: 0,  awind_ranks: 96, nwind_ranks: 576, pre_args:, post_args:}
+    #- {executable: *exawind_exe_nalu_cpu, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-nalu-cpu, compiler: gcc, minutes: 30, nodes: 32, pele_ranks: 0,  awind_ranks: 192, nwind_ranks: 1152, pre_args:, post_args:}
+    #- {executable: *exawind_exe_nalu_cpu, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-nalu-cpu, compiler: gcc, minutes: 30, nodes: 64, pele_ranks: 0,  awind_ranks: 384, nwind_ranks: 2304, pre_args:, post_args:}
+    #- {executable: *exawind_exe_nalu_cpu, input_file: *exawind_input_file, files_to_copy: [*amr_wind_input_file, *nalu_wind_input_file, *amr_wind_static_box], mesh: *nalu_wind_mesh, queue: regular, mapping: exawind-nalu-cpu, compiler: gcc, minutes: 30, nodes: 128, pele_ranks:0, awind_ranks: 768, nwind_ranks: 4608, pre_args:, post_args:}

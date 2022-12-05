@@ -1,0 +1,17 @@
+variables:
+  pelec_input_file: &pelec_input_file '/gpfs/alpine/cmb138/proj-shared/jrood/yadda'
+  pelec_exe: &pelec_exe '/gpfs/alpine/cmb138/proj-shared/jrood/yadda'
+
+job_set:
+  name: pelec-summit-strong-scaling
+  email: jon.rood@nrel.gov
+  mail_type: NONE
+  project_allocation: CMB138
+  notes: PeleC Summit strong scaling study for piston bowl
+  spack_manager: ''
+  job_list:
+    - {executable: *pelec_exe, input_file: *pelec_input_file, files_to_copy: [], mesh: , queue: regular, mapping: pele-1-rank-per-gpu, compiler: gcc, minutes: 30, nodes: 1, pele_ranks: 0, awind_ranks: 0, nwind_ranks: 0, pre_args:, post_args:}
+    - {executable: *pelec_exe, input_file: *pelec_input_file, files_to_copy: [], mesh: , queue: regular, mapping: pele-1-rank-per-gpu, compiler: gcc, minutes: 30, nodes: 2, pele_ranks: 0, awind_ranks: 0, nwind_ranks: 0, pre_args:, post_args:}
+    - {executable: *pelec_exe, input_file: *pelec_input_file, files_to_copy: [], mesh: , queue: regular, mapping: pele-1-rank-per-gpu, compiler: gcc, minutes: 30, nodes: 4, pele_ranks: 0, awind_ranks: 0, nwind_ranks: 0, pre_args:, post_args:}
+    - {executable: *pelec_exe, input_file: *pelec_input_file, files_to_copy: [], mesh: , queue: regular, mapping: pele-1-rank-per-gpu, compiler: gcc, minutes: 30, nodes: 8, pele_ranks: 0, awind_ranks: 0, nwind_ranks: 0, pre_args:, post_args:}
+    - {executable: *pelec_exe, input_file: *pelec_input_file, files_to_copy: [], mesh: , queue: regular, mapping: pele-1-rank-per-gpu, compiler: gcc, minutes: 30, nodes: 16, pele_ranks: 0, awind_ranks: 0, nwind_ranks: 0, pre_args:, post_args:}
