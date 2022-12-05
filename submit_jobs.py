@@ -39,7 +39,6 @@ class Job:
                  minutes,
                  pre_args,
                  post_args,
-                 pele_ranks,
                  awind_ranks,
                  nwind_ranks,
                  walltime,
@@ -64,7 +63,6 @@ class Job:
         self.minutes = minutes
         self.pre_args = pre_args
         self.post_args = post_args
-        self.pele_ranks = pele_ranks
         self.awind_ranks = awind_ranks
         self.nwind_ranks = nwind_ranks
         self.walltime = walltime
@@ -307,8 +305,6 @@ cmd() {
                        + " ranks per node and " + str(job.ranks_per_gpu)
                        + " ranks per GPU on " + str(job.nodes)
                        + " nodes for a total of " + str(job.total_ranks)
-                       + " ranks and " + str(job.total_gpus)
-                       + " total GPUs with " + str(job.pele_ranks)
                        + " ranks...\"\n\n")
 
     if machine == 'summit':
@@ -327,14 +323,15 @@ cmd() {
         job.script += ("cmd \"mkdir mesh\"\n")
 
     if machine == 'summit':
-        job.script += ("cmd \"jsrun --nrs ")
         if job.mapping == 'exawind-all-gpu':
+            job.script += ("cmd \"jsrun --nrs ")
             job.script += (str(job.nwind_ranks)
                            + " --tasks_per_rs " + str(1)
                            + " --cpu_per_rs " + str(1)
                            + " --gpu_per_rs " + str(1)
                            + " --rs_per_host " + str(6))
         elif job.mapping == 'exawind-nalu-cpu':
+            job.script += ("cmd \"jsrun --nrs ")
             job.script += (str(job.nwind_ranks)
                            + " --tasks_per_rs " + str(1)
                            + " --cpu_per_rs " + str(1)
@@ -484,7 +481,6 @@ def print_job_info(job_number, job):
     print("   Compiler: %s" % job.compiler)
     print("   Nodes: %s" % job.nodes)
     print("   Minutes: %s" % job.minutes)
-    print("   Pele Ranks: %s" % job.pele_ranks)
     print("   AMR-Wind Ranks: %s" % job.awind_ranks)
     print("   Nalu-Wind Ranks: %s" % job.nwind_ranks)
     print("   Pre args: %s" % job.pre_args)
@@ -563,7 +559,6 @@ def create_job(job_number, job_instance, job_set_instance):
       job_instance['minutes'],         # number of job minutes
       job_instance['pre_args'],        # arguments before mpirun
       job_instance['post_args'],       # arguments after application
-      job_instance['pele_ranks'],      # number of pele ranks
       job_instance['awind_ranks'],     # number of amr-wind ranks
       job_instance['nwind_ranks'],     # number of nalu-wind ranks
       0,   # walltime
