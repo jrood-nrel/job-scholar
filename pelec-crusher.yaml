@@ -8,7 +8,7 @@ job_set:
   name: pelec-crusher-weak-scaling
   email: jon.rood@nrel.gov
   mail_type: NONE
-  project_allocation: CMB138
+  project_allocation: CMB138_crusher
   notes: PeleC Crusher weak scaling study for PMF dodecane_lu case
   spack_manager: ''
   job_list:
