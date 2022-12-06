@@ -383,6 +383,8 @@ cmd() {
             write_reorder_file(job)
             job.script += ("cmd \"export MPICH_RANK_REORDER_METHOD=3\"\n")
             job.script += ("cmd \"export MPICH_RANK_REORDER_FILE=exawind.rank_map\"\n")
+        if job.mapping == 'pele-1-rank-per-gpu':
+            job.script += "cmd \"module load rocm/5.2.0\"\n"
         job.script += ("cmd \"" + job.pre_args + "srun -N" + str(job.nodes)
                        + " -n" + str(job.total_ranks)
                        + " -c" + str(1)
@@ -395,7 +397,6 @@ cmd() {
                            + str(os.path.basename(job.input_file)) + " "
                            + job.post_args + "\"\n")
         elif job.mapping == 'pele-1-rank-per-gpu':
-            job.script += "cmd \"module load rocm/5.2.0\"\n"
             job.script += (" " + job.executable + " "
                            + str(os.path.basename(job.input_file)) + " "
                            + job.post_args + "\"\n")
