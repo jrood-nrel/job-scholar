@@ -395,6 +395,7 @@ cmd() {
                            + str(os.path.basename(job.input_file)) + " "
                            + job.post_args + "\"\n")
         elif job.mapping == 'pele-1-rank-per-gpu':
+            job.script += "cmd \"module load rocm/5.2.0\"\n"
             job.script += (" " + job.executable + " "
                            + str(os.path.basename(job.input_file)) + " "
                            + job.post_args + "\"\n")
