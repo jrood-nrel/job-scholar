@@ -386,6 +386,11 @@ cmd() {
             job.script += ("cmd \"export MPICH_RANK_REORDER_FILE=exawind.rank_map\"\n")
         if job.mapping == 'pele-1-rank-per-gpu':
             job.script += "cmd \"module load rocm/5.2.0\"\n"
+            job.script += "cmd \"export FI_MR_CACHE_MONITOR=memhooks\"\n"
+            job.script += "cmd \"export FI_CXI_RX_MATCH_MODE=software\"\n"
+            job.script += "cmd \"export FI_CXI_REQ_BUF_SIZE=12582912\"\n"
+            job.script += "cmd \"export FI_CXI_REQ_BUF_MIN_POSTED=6\"\n"
+            job.script += "cmd \"export FI_CXI_DEFAULT_CQ_SIZE=131072\"\n"
         job.script += ("cmd \"" + job.pre_args + "srun -N" + str(job.nodes)
                        + " -n" + str(job.total_ranks)
                        + " -c" + str(1)
