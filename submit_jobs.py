@@ -283,6 +283,7 @@ def write_job_script(machine, job, job_set):
         job.script += "#SBATCH -A " + job_set.project_allocation + "\n"
         job.script += "#SBATCH -t " + str(job.walltime) + "\n"
         job.script += "#SBATCH -N " + str(job.nodes) + "\n"
+        job.script += "#SBATCH -S " + str(0) + "\n"
 
     job.script += r"""
 set -e
@@ -523,7 +524,7 @@ def calculate_job_parameters(machine, job):
         elif job.mapping == 'exawind-nalu-cpu':
             job.ranks_per_node = 42
             job.ranks_per_gpu = 1
-    elif machine == 'crusher':
+    elif machine == 'crusher' or machine == 'frontier':
         job.walltime = job.minutes
         # AMD CPU logic
         job.hyperthreads = 2
