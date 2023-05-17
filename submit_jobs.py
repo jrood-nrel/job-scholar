@@ -385,12 +385,12 @@ cmd() {
             job.script += ("cmd \"export MPICH_RANK_REORDER_METHOD=3\"\n")
             job.script += ("cmd \"export MPICH_RANK_REORDER_FILE=exawind.rank_map\"\n")
         if job.mapping == 'pele-1-rank-per-gpu':
-            job.script += "cmd \"module load rocm/5.2.0\"\n"
-            job.script += "cmd \"export FI_MR_CACHE_MONITOR=memhooks\"\n"
-            job.script += "cmd \"export FI_CXI_RX_MATCH_MODE=software\"\n"
-            job.script += "cmd \"export FI_CXI_REQ_BUF_SIZE=12582912\"\n"
-            job.script += "cmd \"export FI_CXI_REQ_BUF_MIN_POSTED=6\"\n"
-            job.script += "cmd \"export FI_CXI_DEFAULT_CQ_SIZE=131072\"\n"
+            job.script += "cmd \"module unload PrgEnv-cray\"\n"
+            job.script += "cmd \"module load PrgEnv-amd\"\n"
+            job.script += "cmd \"module load xpmem\"\n"
+            job.script += "cmd \"module unload cray-libsci\"\n"
+            job.script += "cmd \"module load cray-libsci/22.12.1.1\"\n"
+            job.script += "cmd \"module load cmake cray-python craype-x86-trento craype-accel-amd-gfx90a amd/5.4.3\"\n"
         job.script += ("cmd \"" + job.pre_args + "srun -N" + str(job.nodes)
                        + " -n" + str(job.total_ranks)
                        + " -c" + str(1)
@@ -461,7 +461,7 @@ def submit_job_script(machine, job, job_set):
             )
             print("   ".encode('ascii') + batch.encode('ascii') + "output: ".encode('ascii') + output)
         except subprocess.CalledProcessError as err:
-            print("   ".encode('ascii') + batch.encode('ascii') + "error: ".encode('ascii') + output)
+            #print("   ".encode('ascii') + batch.encode('ascii') + "error: ".encode('ascii') + output)
             print(err.output)
     else:
         print("   TEST RUN. Real run would use the command:")
