@@ -282,6 +282,7 @@ def write_job_script(machine, job, job_set):
         job.script += "#SBATCH -o " + "%x.o%j\n"
         job.script += "#SBATCH -A " + job_set.project_allocation + "\n"
         job.script += "#SBATCH -t " + str(job.walltime) + "\n"
+        job.script += "#SBATCH -q " + str(job.queue) + "\n"
         job.script += "#SBATCH -N " + str(job.nodes) + "\n"
         job.script += "#SBATCH -S " + str(0) + "\n"
 
@@ -301,6 +302,14 @@ cmd() {
                        + " total GPUs with " + str(job.awind_ranks)
                        + " AMR-Wind ranks and " + str(job.nwind_ranks)
                        + " Nalu-Wind ranks...\"\n\n")
+    elif job.mapping == 'amrwind-all-gpu':
+        job.script += ("echo \"Running with " + str(job.ranks_per_node)
+                       + " ranks per node and " + str(job.ranks_per_gpu)
+                       + " ranks per GPU on " + str(job.nodes)
+                       + " nodes for a total of " + str(job.total_ranks)
+                       + " ranks and " + str(job.total_gpus)
+                       + " total GPUs with " + str(job.awind_ranks)
+                       + " AMR-Wind ranks...\"\n\n")
     elif job.mapping == 'pele-1-rank-per-gpu':
         job.script += ("echo \"Running with " + str(job.ranks_per_node)
                        + " ranks per node and " + str(job.ranks_per_gpu)
@@ -322,6 +331,15 @@ cmd() {
         job.script += ("cmd \"which exawind\"\n")
         job.script += ("cmd \"rm -rf mesh\"\n")
         job.script += ("cmd \"mkdir mesh\"\n")
+    elif job.mapping == 'amrwind-all-gpu':
+        job.script += ("cmd \"module unload PrgEnv-cray\"\n")
+        job.script += ("cmd \"module load PrgEnv-amd\"\n")
+        job.script += ("cmd \"module load amd/5.4.3\"\n")
+        job.script += ("cmd \"" + "export SPACK_MANAGER=" + job_set.spack_manager + "\"\n")
+        job.script += ("cmd \"source ${SPACK_MANAGER}/start.sh && spack-start\"\n")
+        job.script += ("cmd \"spack env activate -d ${SPACK_MANAGER}/environments/amr-wind-dev\"\n")
+        job.script += ("cmd \"spack load " + job.executable + "\"\n")
+        job.script += ("cmd \"which amr_wind\"\n")
 
     if machine == 'summit':
         if job.mapping == 'exawind-all-gpu':
@@ -391,6 +409,7 @@ cmd() {
             job.script += "cmd \"module unload cray-libsci\"\n"
             job.script += "cmd \"module load cray-libsci/22.12.1.1\"\n"
             job.script += "cmd \"module load cmake cray-python craype-x86-trento craype-accel-amd-gfx90a amd/5.4.3\"\n"
+
         job.script += ("cmd \"" + job.pre_args + "srun -N" + str(job.nodes)
                        + " -n" + str(job.total_ranks)
                        + " -c" + str(1)
@@ -404,6 +423,10 @@ cmd() {
                            + job.post_args + "\"\n")
         elif job.mapping == 'pele-1-rank-per-gpu':
             job.script += (" " + job.executable + " "
+                           + str(os.path.basename(job.input_file)) + " "
+                           + job.post_args + "\"\n")
+        elif job.mapping == 'amrwind-all-gpu':
+            job.script += (" amr_wind "
                            + str(os.path.basename(job.input_file)) + " "
                            + job.post_args + "\"\n")
 
@@ -534,7 +557,7 @@ def calculate_job_parameters(machine, job):
         # AMD CPU logic
         job.hyperthreads = 2
         job.gpus_per_node = 8
-        if job.mapping == 'exawind-all-gpu' or job.mapping == 'pele-1-rank-per-gpu':
+        if job.mapping == 'exawind-all-gpu' or job.mapping == 'pele-1-rank-per-gpu' or job.mapping == 'amrwind-all-gpu':
             job.ranks_per_node = 8
             job.ranks_per_gpu = 1
         elif job.mapping == 'exawind-nalu-cpu':
