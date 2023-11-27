@@ -10,4 +10,4 @@ job_set:
   notes: AMR-Wind Frontier weak scaling study for ABL case
   spack_manager: '${HOME}/exawind/spack-manager'
   job_list:
-    - {executable: *amrwind_exe, input_file: *amrwind_input_file, files_to_copy: [], mesh:, queue: debug, mapping: amrwind-all-gpu, compiler: gcc, minutes: 30, nodes: 1, awind_ranks: 8, nwind_ranks: 0, pre_args:, post_args: 'amr.n_cell=256 256 128 time.fixed_dt=0.02 time.max_step=10 time.plot_interval=-1 time.checkpoint_interval=-1 amrex.abort_on_out_of_gpu_memory=1 amrex.the_arena_is_managed=0 amr.blocking_factor=16 amr.max_grid_size=64 amrex.use_profiler_syncs=0'}
+    - {executable: *amrwind_exe, input_file: *amrwind_input_file, files_to_copy: [], mesh:, queue: debug, mapping: amrwind-all-gpu, compiler: gcc, minutes: 30, nodes: 1, awind_ranks: 8, nwind_ranks: 0, pre_args:, post_args: 'amr.n_cell=256 256 256 time.fixed_dt=0.02 time.max_step=10 time.plot_interval=-1 time.checkpoint_interval=-1 amrex.abort_on_out_of_gpu_memory=1 amrex.the_arena_is_managed=0 amr.blocking_factor=16 amr.max_grid_size=64 amrex.use_profiler_syncs=0 amrex.async_out=0'}
