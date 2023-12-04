@@ -282,7 +282,7 @@ def write_job_script(machine, job, job_set):
         job.script += "#SBATCH -o " + "%x.o%j\n"
         job.script += "#SBATCH -A " + job_set.project_allocation + "\n"
         job.script += "#SBATCH -t " + str(job.walltime) + "\n"
-        job.script += "#SBATCH -q " + str(job.queue) + "\n"
+        job.script += "#SBATCH -p " + str(job.queue) + "\n"
         job.script += "#SBATCH -N " + str(job.nodes) + "\n"
         job.script += "#SBATCH -S " + str(0) + "\n"
 
@@ -338,9 +338,10 @@ cmd() {
         job.script += ("cmd \"export FI_MR_CACHE_MONITOR=memhooks\"\n")
         job.script += ("cmd \"export FI_CXI_RX_MATCH_MODE=software\"\n")
         job.script += ("cmd \"export MPICH_SMP_SINGLE_COPY_MODE=NONE\"\n")
+        job.script += ("cmd \"export MPICH_GPU_SUPPORT_ENABLED=1\"\n")
         job.script += ("cmd \"" + "export SPACK_MANAGER=" + job_set.spack_manager + "\"\n")
         job.script += ("cmd \"source ${SPACK_MANAGER}/start.sh && spack-start\"\n")
-        job.script += ("cmd \"spack env activate -d ${SPACK_MANAGER}/environments/amr-wind-dev\"\n")
+        job.script += ("cmd \"spack env activate -d ${SPACK_MANAGER}/environments/amr-wind-mpi\"\n")
         job.script += ("cmd \"spack load " + job.executable + "\"\n")
         job.script += ("cmd \"which amr_wind\"\n")
 
