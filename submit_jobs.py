@@ -49,7 +49,8 @@ class Job:
                  total_ranks,
                  total_gpus,
                  path,
-                 script):
+                 script,
+                 profile):
 
         self.name = name
         self.queue = queue
@@ -74,6 +75,7 @@ class Job:
         self.total_gpus = total_gpus
         self.path = path
         self.script = script
+        self.profile = profile
 
 
 class JobSet:
@@ -430,6 +432,8 @@ cmd() {
                            + str(os.path.basename(job.input_file)) + " "
                            + job.post_args + "\"\n")
         elif job.mapping == 'amrwind-all-gpu':
+            if job.profile == "rocprof":
+                job.script+=(" rocprof --roctx-trace --hip-trace --stats -o output.csv")
             job.script += (" amr_wind "
                            + str(os.path.basename(job.input_file)) + " "
                            + job.post_args + "\"\n")
@@ -519,6 +523,7 @@ def print_job_info(job_number, job):
     print("   Nalu-Wind Ranks: %s" % job.nwind_ranks)
     print("   Pre args: %s" % job.pre_args)
     print("   Post args: %s" % job.post_args)
+    print("   Profile: %s" % job.profile)
 
 
 # ========================================================================
@@ -603,7 +608,8 @@ def create_job(job_number, job_instance, job_set_instance):
       0,   # total_ranks
       0,   # total_gpus
       "",  # path
-      "")  # script
+      "",  # script
+      job_instance['profile']) # profile
 
     if job.pre_args is None:
         job.pre_args = ''

@@ -1,5 +1,5 @@
 variables:
-  amrwind_exe: &amrwind_exe 'amr-wind+rocm+tiny_profile+gpu-aware-mpi'
+  amrwind_exe: &amrwind_exe 'amr-wind+rocm+tiny_profile+gpu-aware-mpi+roctx-profile'
   amrwind_input_file: &amrwind_input_file '/lustre/orion/cfd116/proj-shared/marchdf/amrwind-scaling/abl_godunov_wenoz.inp'
 
 job_set:
