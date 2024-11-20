@@ -32,6 +32,7 @@ class Job:
                  mapping,
                  compiler,
                  executable,
+                 spec,
                  input_file,
                  mesh,
                  files_to_copy,
@@ -57,6 +58,7 @@ class Job:
         self.mapping = mapping
         self.compiler = compiler
         self.executable = executable
+        self.spec = spec
         self.input_file = input_file
         self.mesh = mesh
         self.files_to_copy = files_to_copy
@@ -87,7 +89,8 @@ class JobSet:
                  mail_type,
                  project_allocation,
                  notes,
-                 spack_manager,
+                 exawind_manager,
+                 environment,
                  path):
 
         self.name = name
@@ -96,7 +99,8 @@ class JobSet:
         self.project_allocation = project_allocation
         self.test_run = test_run
         self.notes = notes
-        self.spack_manager = spack_manager
+        self.exawind_manager = exawind_manager
+        self.environment = environment
         self.path = path
 
 # ========================================================================
@@ -107,12 +111,15 @@ class JobSet:
 
 
 def find_machine_name():
-    if os.getenv('LMOD_SYSTEM_NAME') == 'summit':
-        return 'summit'
-    elif os.getenv('LMOD_SYSTEM_NAME') == 'crusher':
-        return 'crusher'
-    elif os.getenv('LMOD_SYSTEM_NAME') == 'frontier':
+    if os.getenv('LMOD_SYSTEM_NAME') == 'frontier':
         return 'frontier'
+    if os.getenv('NREL_CLUSTER') == 'kestrel':
+        if os.getenv('CRAY_CPU_TARGET') == 'x86-spr':
+            return 'kestrel-cpu'
+        elif os.getenv('CRAY_CPU_TARGET') == 'x86-genoa':
+            return 'kestrel-gpu'
+        else:
+            print("Cannot determine host")
     else:
         print("Cannot determine host")
         exit(-1)
@@ -178,56 +185,6 @@ def check_file_existence(job_executable, job_input_file, job_files_to_copy):
 
 # ========================================================================
 #
-# Function for writing ERF
-#
-# ========================================================================
-
-def write_erf(job):
-    summit_cpu_cores = 42
-    summit_cpu_threads_per_core = 4
-    summit_gpus_per_node = 6
-    total_ranks = job.nodes * summit_cpu_cores
-    amr_wind_rank_skip = summit_cpu_threads_per_core * (summit_cpu_cores // summit_gpus_per_node)
-    total_nodes = total_ranks // summit_cpu_cores
-    amr_wind_rank_total = total_nodes * summit_gpus_per_node
-    nalu_wind_rank_total = total_ranks - amr_wind_rank_total
-    core = 0
-    host = 0
-    amr_wind_rank = 0
-    nalu_wind_rank = amr_wind_rank_total
-    hidden_core = 84
-
-    print(f"AMR-Wind rank total: {amr_wind_rank_total}")
-    print(f"Nalu-Wind rank total: {nalu_wind_rank_total}")
-
-    with open(os.path.join(job.path, 'exawind.erf'), "w") as f:
-        f.write("\ncpu_index_using: physical\n\n")
-        for rank in range(total_ranks):
-            if (rank % summit_cpu_cores == 0):
-                host += 1
-                core = 0
-                amr_wind_core = 0
-                nalu_wind_core = 0
-                nalu_wind_skip = 0
-            if (core < summit_cpu_threads_per_core * summit_gpus_per_node):
-                if (amr_wind_core == hidden_core):
-                    amr_wind_core += summit_cpu_threads_per_core
-                f.write(f"""rank: {amr_wind_rank} : {{host: {host}; cpu: {{{amr_wind_core}:{summit_cpu_threads_per_core}}}; gpu: {core // summit_cpu_threads_per_core}}}\n""")
-                amr_wind_rank += 1
-                amr_wind_core += amr_wind_rank_skip
-            else:
-                if ((nalu_wind_core % amr_wind_rank_skip) == 0):
-                    nalu_wind_core += summit_cpu_threads_per_core
-                if (nalu_wind_core == hidden_core + summit_cpu_threads_per_core):
-                    nalu_wind_skip = summit_cpu_threads_per_core
-                f.write(f"""rank: {nalu_wind_rank} : {{host: {host}; cpu: {{{nalu_wind_core+nalu_wind_skip}:{summit_cpu_threads_per_core}}}}}\n""")
-                nalu_wind_rank += 1
-                nalu_wind_core += summit_cpu_threads_per_core
-            core += summit_cpu_threads_per_core
-
-
-# ========================================================================
-#
 # Function for writing MPICH rank file
 #
 # ========================================================================
@@ -272,14 +229,7 @@ def write_job_script(machine, job, job_set):
     job.script = "#!/bin/bash -l\n\n"
     job.script += "# Notes: " + job_set.notes + "\n\n"
 
-    if machine == 'summit':
-        job.script += "#BSUB -J " + job.name + "\n"
-        job.script += "#BSUB -o " + job.name + ".o%J\n"
-        job.script += "#BSUB -P " + job_set.project_allocation + "\n"
-        job.script += "#BSUB -W " + str(job.walltime) + "\n"
-        job.script += "#BSUB -alloc_flags \"smt4\"\n"
-        job.script += "#BSUB -nnodes " + str(job.nodes) + "\n"
-    elif machine == 'crusher' or machine == 'frontier':
+    if machine == 'frontier' or machine == 'kestrel-cpu' or machine == 'kestrel-gpu':
         job.script += "#SBATCH -J " + job.name + "\n"
         job.script += "#SBATCH -o " + "%x.o%j\n"
         job.script += "#SBATCH -A " + job_set.project_allocation + "\n"
@@ -318,108 +268,40 @@ cmd() {
                        + " ranks per GPU on " + str(job.nodes)
                        + " nodes for a total of " + str(job.total_ranks)
                        + " ranks...\"\n\n")
+    elif job.mapping == '1-rank-per-core':
+        job.script += ("echo \"Running with " + str(job.ranks_per_node)
+                       + " ranks per node on " + str(job.nodes)
+                       + " nodes for a total of " + str(job.total_ranks)
+                       + " ranks...\"\n\n")
 
-    if machine == 'summit':
-        job.script += "cmd \"module unload xl\"\n"
-        job.script += "cmd \"module load cuda/11.4.2\"\n"
-        job.script += "cmd \"module load gcc/10.2.0\"\n"
+    if machine == 'kestrel-cpu':
+        job.script += "cmd \"module load PrgEnv-intel\"\n"
+    if machine == 'kestrel-gpu':
+        job.script += "cmd \"module load PrgEnv-gnu\"\n"
 
-    if job.mapping == 'exawind-all-gpu' or job.mapping == 'exawind-nalu-cpu':
-        job.script += ("cmd \"" + "export SPACK_MANAGER=" + job_set.spack_manager + "\"\n")
-        job.script += ("cmd \"source ${SPACK_MANAGER}/start.sh && spack-start\"\n")
-        job.script += ("cmd \"spack env activate -d ${SPACK_MANAGER}/environments/exawind-" + machine + "\"\n")
-        job.script += ("cmd \"spack load " + job.executable + "\"\n")
-        job.script += ("cmd \"spack load trilinos~cuda\"\n")
-        job.script += ("cmd \"which exawind\"\n")
-        job.script += ("cmd \"rm -rf mesh\"\n")
-        job.script += ("cmd \"mkdir mesh\"\n")
-    elif job.mapping == 'amrwind-all-gpu':
-        job.script += ("cmd \"module unload PrgEnv-cray\"\n")
-        job.script += ("cmd \"module load PrgEnv-amd\"\n")
-        job.script += ("cmd \"module load amd/5.4.3\"\n")
-        job.script += ("cmd \"export FI_MR_CACHE_MONITOR=memhooks\"\n")
-        job.script += ("cmd \"export FI_CXI_RX_MATCH_MODE=software\"\n")
-        job.script += ("cmd \"export MPICH_SMP_SINGLE_COPY_MODE=NONE\"\n")
-        job.script += ("cmd \"export MPICH_GPU_SUPPORT_ENABLED=1\"\n")
-        job.script += ("cmd \"" + "export SPACK_MANAGER=" + job_set.spack_manager + "\"\n")
-        job.script += ("cmd \"source ${SPACK_MANAGER}/start.sh && spack-start\"\n")
-        job.script += ("cmd \"spack env activate -d ${SPACK_MANAGER}/environments/amr-wind-mpi\"\n")
-        job.script += ("cmd \"spack load " + job.executable + "\"\n")
-        job.script += ("cmd \"which amr_wind\"\n")
+    if machine == 'frontier' or machine == 'kestrel-cpu' or machine == 'kestrel-gpu':
+        job.script += ("cmd \"module load cray-python\"\n")
+        job.script += ("cmd \"#export FI_MR_CACHE_MONITOR=memhooks\"\n")
+        job.script += ("cmd \"#export FI_CXI_RX_MATCH_MODE=software\"\n")
+        job.script += ("cmd \"#export MPICH_SMP_SINGLE_COPY_MODE=NONE\"\n")
+        job.script += ("cmd \"#export MPICH_GPU_SUPPORT_ENABLED=1\"\n")
+        job.script += ("cmd \"" + "export EXAWIND_MANAGER=" + job_set.exawind_manager + "\"\n")
+        job.script += ("cmd \"source ${EXAWIND_MANAGER}/start.sh && spack-start\"\n")
+        job.script += ("cmd \"spack env activate -d ${EXAWIND_MANAGER}/environments/" + job_set.environment + "\"\n")
+        job.script += ("cmd \"spack load " + job.spec + "\"\n")
 
-    if machine == 'summit':
-        if job.mapping == 'exawind-all-gpu':
-            job.script += ("cmd \"jsrun --nrs ")
-            job.script += (str(job.nwind_ranks)
-                           + " --tasks_per_rs " + str(1)
-                           + " --cpu_per_rs " + str(1)
-                           + " --gpu_per_rs " + str(1)
-                           + " --rs_per_host " + str(6))
-        elif job.mapping == 'exawind-nalu-cpu':
-            job.script += ("cmd \"jsrun --nrs ")
-            job.script += (str(job.nwind_ranks)
-                           + " --tasks_per_rs " + str(1)
-                           + " --cpu_per_rs " + str(1)
-                           + " --gpu_per_rs " + str(0)
-                           + " --rs_per_host " + str(36))
-        if job.mapping == 'exawind-all-gpu' or job.mapping == 'exawind-nalu-cpu':
-            job.script += (" stk_balance.exe -o ./mesh/ -i " + job.mesh + "\"\n")
-        if job.mapping == 'exawind-all-gpu':
-            job.script += "cmd \"export CUDA_LAUNCH_BLOCKING=1\"\n"
-            job.script += ("cmd \"" + job.pre_args
-                           + "jsrun --nrs ")
-            job.script += (str(job.total_ranks)
-                           + " --tasks_per_rs " + str(1)
-                           + " --cpu_per_rs " + str(1)
-                           + " --gpu_per_rs " + str(1)
-                           + " --rs_per_host " + str(6))
-            job.script += (" exawind --awind "
-                           + str(job.awind_ranks) + " --nwind "
-                           + str(job.nwind_ranks) + " "
-                           + str(os.path.basename(job.input_file)) + " "
-                           + job.post_args + "\"\n")
-        elif job.mapping == 'exawind-nalu-cpu':
-            write_erf(job)
-            job.script += ("cmd \"export JSM_ROOT=/gpfs/alpine/stf007/world-shared/vgv/inbox/jsm_erf/jsm-10.4.0.4/opt/ibm/jsm\"\n")
-            job.script += "${JSM_ROOT}/bin/jsm &\n"
-            job.script += ("cmd \"${JSM_ROOT}/bin/jsrun --erf_input=exawind.erf exawind --awind "
-                           + str(job.awind_ranks) + " --nwind "
-                           + str(job.nwind_ranks) + " "
-                           + str(os.path.basename(job.input_file)) + " "
-                           + job.post_args + "\"\n")
-        elif job.mapping == 'pele-1-rank-per-gpu':
-            job.script += ("cmd \"" + job.pre_args
-                           + "jsrun --nrs ")
-            job.script += (str(job.total_ranks)
-                           + " --tasks_per_rs " + str(1)
-                           + " --cpu_per_rs " + str(1)
-                           + " --gpu_per_rs " + str(1)
-                           + " --rs_per_host " + str(6))
-            job.script += (" " + job.executable + " "
-                           + str(os.path.basename(job.input_file)) + " "
-                           + job.post_args + "\"\n")
-    elif machine == 'crusher' or machine == 'frontier':
+    if machine == 'frontier' or machine == 'kestrel-gpu':
         if job.mapping == 'exawind-all-gpu' or job.mapping == 'exawind-nalu-cpu':
             job.script += ("cmd \"srun -N" + str(job.nodes)
-                           + " -n" + str(job.nwind_ranks)
-                           + " -c" + str(1))
-            job.script += (" stk_balance.exe -o ./mesh/ -i " + job.mesh + "\"\n")
+                           + " -n" + str(job.nwind_ranks))
         if job.mapping == 'exawind-nalu-cpu':
             write_reorder_file(job)
             job.script += ("cmd \"export MPICH_RANK_REORDER_METHOD=3\"\n")
             job.script += ("cmd \"export MPICH_RANK_REORDER_FILE=exawind.rank_map\"\n")
-        if job.mapping == 'pele-1-rank-per-gpu':
-            job.script += "cmd \"module unload PrgEnv-cray\"\n"
-            job.script += "cmd \"module load PrgEnv-amd\"\n"
-            job.script += "cmd \"module load xpmem\"\n"
-            job.script += "cmd \"module unload cray-libsci\"\n"
-            job.script += "cmd \"module load cray-libsci/22.12.1.1\"\n"
-            job.script += "cmd \"module load cmake cray-python craype-x86-trento craype-accel-amd-gfx90a amd/5.4.3\"\n"
 
         job.script += ("cmd \"" + job.pre_args + "srun -N" + str(job.nodes)
                        + " -n" + str(job.total_ranks)
-                       + " -c" + str(1)
-                       + " --gpus-per-node=" + str(8)
+                       + " --gpus-per-node=" + str(job.gpus_per_node)
                        + " --gpu-bind=closest")
         if job.mapping == 'exawind-all-gpu' or job.mapping == 'exawind-nalu-cpu':
             job.script += (" exawind --awind "
@@ -427,7 +309,7 @@ cmd() {
                            + str(job.nwind_ranks) + " "
                            + str(os.path.basename(job.input_file)) + " "
                            + job.post_args + "\"\n")
-        elif job.mapping == 'pele-1-rank-per-gpu':
+        elif job.mapping == 'pele-1-rank-per-gpu' or job.mapping == '1-rank-per-core':
             job.script += (" " + job.executable + " "
                            + str(os.path.basename(job.input_file)) + " "
                            + job.post_args + "\"\n")
@@ -437,9 +319,13 @@ cmd() {
             job.script += (" amr_wind "
                            + str(os.path.basename(job.input_file)) + " "
                            + job.post_args + "\"\n")
-
-    if job.mapping == 'exawind-all-gpu' or job.mapping == 'exawind-nalu-cpu':
-        job.script += "cmd \"rm -r mesh\"\n"
+    if machine == 'kestrel-cpu':
+        job.script += ("cmd \"" + job.pre_args + "srun -N" + str(job.nodes)
+                       + " -n" + str(job.total_ranks)
+                       + " --ntasks-per-node=52 --distribution=cyclic:cyclic --cpu_bind=cores "
+                       + job.executable + " "
+                       + str(os.path.basename(job.input_file)) + " "
+                       + job.post_args + "\"\n")
 
     # Write job script to file
     job.script_file = os.path.join(job.path, job.name + '.sh')
@@ -478,9 +364,7 @@ def submit_job_script(machine, job, job_set):
     # print("   Changing to directory " + job.path)
     os.chdir(job.path)
 
-    if machine == 'summit':
-        batch = 'bsub '
-    elif machine == 'crusher' or machine == 'frontier':
+    if machine == 'frontier' or machine == 'kestrel-cpu' or machine == 'kestrel-gpu':
         batch = 'sbatch '
 
     print("   Submitting job...")
@@ -512,6 +396,7 @@ def submit_job_script(machine, job, job_set):
 def print_job_info(job_number, job):
     print("%s: %s" % (job_number, job.name))
     print("   Executable: %s" % job.executable)
+    print("   Spec: %s" % job.spec)
     print("   Input file: %s" % job.input_file)
     print("   Mesh: %s" % job.mesh)
     print("   Queue: %s" % job.queue)
@@ -538,6 +423,8 @@ def print_job_set_info(job_set):
     print("Project allocation: %s" % job_set.project_allocation)
     print("Email: %s" % job_set.email)
     print("Notes: %s" % job_set.notes)
+    print("Exawind-Manager: %s" % job_set.exawind_manager)
+    print("Environment: %s" % job_set.environment)
     if job_set.test_run is True:
         print("Performing test job submission")
 
@@ -550,18 +437,7 @@ def print_job_set_info(job_set):
 
 
 def calculate_job_parameters(machine, job):
-    if machine == 'summit':
-        job.walltime = job.minutes
-        # Power9 CPU logic
-        job.hyperthreads = 4
-        job.gpus_per_node = 6
-        if job.mapping == 'exawind-all-gpu' or job.mapping == 'pele-1-rank-per-gpu':
-            job.ranks_per_node = 6
-            job.ranks_per_gpu = 1
-        elif job.mapping == 'exawind-nalu-cpu':
-            job.ranks_per_node = 42
-            job.ranks_per_gpu = 1
-    elif machine == 'crusher' or machine == 'frontier':
+    if machine == 'frontier':
         job.walltime = job.minutes
         # AMD CPU logic
         job.hyperthreads = 2
@@ -572,6 +448,23 @@ def calculate_job_parameters(machine, job):
         elif job.mapping == 'exawind-nalu-cpu':
             job.ranks_per_node = 62
             job.ranks_per_gpu = 1
+    elif machine == 'kestrel-gpu':
+        job.walltime = job.minutes
+        # AMD CPU logic
+        job.gpus_per_node = 4
+        if job.mapping == 'exawind-all-gpu' or job.mapping == 'pele-1-rank-per-gpu' or job.mapping == 'amrwind-all-gpu':
+            job.ranks_per_node = 4
+            job.ranks_per_gpu = 1
+        elif job.mapping == 'exawind-nalu-cpu':
+            job.ranks_per_node = 124
+            job.ranks_per_gpu = 1
+    elif machine == 'kestrel-cpu':
+        job.walltime = job.minutes
+        # Intel CPU logic
+        job.gpus_per_node = 0
+        if job.mapping == '1-rank-per-core':
+            job.ranks_per_node = 52
+            job.ranks_per_gpu = 0
 
     job.total_ranks = int(job.nodes * job.ranks_per_node)
     job.total_gpus = int(job.nodes * job.gpus_per_node)
@@ -591,6 +484,7 @@ def create_job(job_number, job_instance, job_set_instance):
       job_instance['mapping'],         # mapping
       job_instance['compiler'],        # compiler
       job_instance['executable'],      # executable
+      job_instance['spec'],            # spec
       job_instance['input_file'],      # input file
       job_instance['mesh'],            # mesh file
       job_instance['files_to_copy'],   # files to copy
@@ -638,7 +532,8 @@ def create_job_set(job_set_instance, job_set_path):
       job_set_instance['mail_type'],          # mail_type
       job_set_instance['project_allocation'], # project_allocation
       job_set_instance['notes'],              # notes
-      job_set_instance['spack_manager'],      # spack-manager
+      job_set_instance['exawind_manager'],    # exawind-manager
+      job_set_instance['environment'],        # exawind-manager environment
       job_set_path                            # path
     )
 
