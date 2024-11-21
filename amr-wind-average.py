@@ -17,6 +17,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     for fname in args.fnames:
-        data = pd.read_csv(fname, delim_whitespace=True, skiprows=0, header=None)
+        data = pd.read_csv(fname, sep="\\s+", skiprows=0, header=None)
         array = data.to_numpy()
         print(np.mean(array[:]))
