@@ -1,0 +1,19 @@
+variables:
+  executable: &executable 'amr_wind'
+  amrwind_spec: &amrwind_spec 'amr-wind~gpu-aware-mpi+cuda'
+  amrwind_input_file: &amrwind_input_file '/kfs3/scratch/jrood/amr-wind/test/test_files/abl_godunov/abl_godunov.inp'
+
+job_set:
+  name: amrwind-kestrel-max-cells
+  email: jon.rood@nrel.gov
+  mail_type: NONE
+  project_allocation: hpcapps
+  notes: AMR-Wind Kestrel GPU max cells per node search
+  exawind_manager: '${HOME}/exawind-manager'
+  environment: 'amr-wind-gpu'
+  job_list:
+    - {spec: *amrwind_spec, executable: *executable, input_file: *amrwind_input_file, files_to_copy: [], mesh:, queue: gpu-h100s, mapping: amrwind-all-gpu, compiler: gcc, minutes: 30, nodes: 1, awind_ranks: 4, nwind_ranks: 0, profile:, pre_args:, post_args: 'amr.n_cell=1024 1024 256 geometry.prob_hi=4000. 4000. 1000. time.fixed_dt=0.02 time.max_step=10 time.plot_interval=-1 time.checkpoint_interval=-1 amrex.abort_on_out_of_gpu_memory=1 amrex.the_arena_is_managed=0 amr.blocking_factor=8 amr.max_grid_size=256 amrex.use_profiler_syncs=0 amrex.async_out=0'}
+    - {spec: *amrwind_spec, executable: *executable, input_file: *amrwind_input_file, files_to_copy: [], mesh:, queue: gpu-h100s, mapping: amrwind-all-gpu, compiler: gcc, minutes: 30, nodes: 1, awind_ranks: 4, nwind_ranks: 0, profile:, pre_args:, post_args: 'amr.n_cell=2048 1024 256 geometry.prob_hi=8000. 4000. 1000. time.fixed_dt=0.02 time.max_step=10 time.plot_interval=-1 time.checkpoint_interval=-1 amrex.abort_on_out_of_gpu_memory=1 amrex.the_arena_is_managed=0 amr.blocking_factor=8 amr.max_grid_size=256 amrex.use_profiler_syncs=0 amrex.async_out=0'}
+    - {spec: *amrwind_spec, executable: *executable, input_file: *amrwind_input_file, files_to_copy: [], mesh:, queue: gpu-h100s, mapping: amrwind-all-gpu, compiler: gcc, minutes: 30, nodes: 1, awind_ranks: 4, nwind_ranks: 0, profile:, pre_args:, post_args: 'amr.n_cell=2048 2048 256 geometry.prob_hi=8000. 8000. 1000. time.fixed_dt=0.02 time.max_step=10 time.plot_interval=-1 time.checkpoint_interval=-1 amrex.abort_on_out_of_gpu_memory=1 amrex.the_arena_is_managed=0 amr.blocking_factor=8 amr.max_grid_size=256 amrex.use_profiler_syncs=0 amrex.async_out=0'}
+    - {spec: *amrwind_spec, executable: *executable, input_file: *amrwind_input_file, files_to_copy: [], mesh:, queue: gpu-h100s, mapping: amrwind-all-gpu, compiler: gcc, minutes: 30, nodes: 1, awind_ranks: 4, nwind_ranks: 0, profile:, pre_args:, post_args: 'amr.n_cell=4096 2048 256 geometry.prob_hi=16000. 8000. 1000. time.fixed_dt=0.02 time.max_step=10 time.plot_interval=-1 time.checkpoint_interval=-1 amrex.abort_on_out_of_gpu_memory=1 amrex.the_arena_is_managed=0 amr.blocking_factor=8 amr.max_grid_size=256 amrex.use_profiler_syncs=0 amrex.async_out=0'}
+    - {spec: *amrwind_spec, executable: *executable, input_file: *amrwind_input_file, files_to_copy: [], mesh:, queue: gpu-h100s, mapping: amrwind-all-gpu, compiler: gcc, minutes: 30, nodes: 1, awind_ranks: 4, nwind_ranks: 0, profile:, pre_args:, post_args: 'amr.n_cell=4096 4096 256 geometry.prob_hi=16000. 16000. 1000. time.fixed_dt=0.02 time.max_step=10 time.plot_interval=-1 time.checkpoint_interval=-1 amrex.abort_on_out_of_gpu_memory=1 amrex.the_arena_is_managed=0 amr.blocking_factor=8 amr.max_grid_size=256 amrex.use_profiler_syncs=0 amrex.async_out=0'}

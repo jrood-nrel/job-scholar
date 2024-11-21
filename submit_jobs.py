@@ -236,7 +236,13 @@ def write_job_script(machine, job, job_set):
         job.script += "#SBATCH -t " + str(job.walltime) + "\n"
         job.script += "#SBATCH -p " + str(job.queue) + "\n"
         job.script += "#SBATCH -N " + str(job.nodes) + "\n"
-        job.script += "#SBATCH -S " + str(0) + "\n"
+        #job.script += "#SBATCH -S " + str(0) + "\n"
+
+    if machine == 'kestrel-gpu':
+        job.script += "#SBATCH --gpus-per-node=" + str(4) + "\n"
+        job.script += "#SBATCH --ntasks-per-node=" + str(128) + "\n"
+        job.script += "#SBATCH --exclusive" + "\n"
+        job.script += "#SBATCH --mem=0" + "\n"
 
     job.script += r"""
 set -e
