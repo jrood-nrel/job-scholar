@@ -287,7 +287,7 @@ cmd() {
         job.script += ("#cmd \"export MPICH_GPU_SUPPORT_ENABLED=1\"\n")
         job.script += ("cmd \"" + "export EXAWIND_MANAGER=" + job_set.exawind_manager + "\"\n")
         job.script += ("cmd \"source ${EXAWIND_MANAGER}/start.sh && spack-start\"\n")
-        job.script += ("cmd \"spack env activate -d ${EXAWIND_MANAGER}/environments/" + job_set.environment + "\"\n")
+        job.script += ("cmd \"spack env activate " + job_set.environment + "\"\n")
         job.script += ("cmd \"spack load " + job.spec + "\"\n")
 
     if machine == 'frontier' or machine == 'kestrel-gpu':
