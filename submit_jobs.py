@@ -290,7 +290,7 @@ cmd() {
         job.script += ("#cmd \"export FI_MR_CACHE_MONITOR=memhooks\"\n")
         job.script += ("#cmd \"export FI_CXI_RX_MATCH_MODE=software\"\n")
         job.script += ("#cmd \"export MPICH_SMP_SINGLE_COPY_MODE=NONE\"\n")
-        job.script += ("#cmd \"export MPICH_GPU_SUPPORT_ENABLED=1\"\n")
+        job.script += ("cmd \"export MPICH_GPU_SUPPORT_ENABLED=1\"\n")
         job.script += ("cmd \"" + "export EXAWIND_MANAGER=" + job_set.exawind_manager + "\"\n")
         job.script += ("cmd \"source ${EXAWIND_MANAGER}/start.sh && spack-start\"\n")
         job.script += ("cmd \"spack env activate " + job_set.environment + "\"\n")
