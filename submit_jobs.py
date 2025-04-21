@@ -209,10 +209,10 @@ def write_reorder_file(job):
         for nalu_wind_rank in range(nalu_wind_ranks_per_node):
             offset_nalu_wind_rank = nalu_wind_rank + total_amr_wind_ranks + (node * nalu_wind_ranks_per_node)
             cpu_map = cpu_map + str(offset_nalu_wind_rank) + ','
-        cpu_map = cpu_map + ',,'
+        # cpu_map = cpu_map + ',,'
 
     #cpu_map = cpu_map[:-1]
-    with open(os.path.join(job.path, 'exawind.rank_map'), "w") as f:
+    with open(os.path.join(job.path, 'exawind.reorder_file'), "w") as f:
         f.write(cpu_map)
 
 
@@ -251,7 +251,7 @@ cmd() {
   eval "$@"
 }
 """
-    if job.mapping == 'exawind-all-gpu':
+    if job.mapping == 'exawind-all-gpu' or job.mapping == 'exawind-nalu-cpu':
         job.script += ("echo \"Running with " + str(job.ranks_per_node)
                        + " ranks per node and " + str(job.ranks_per_gpu)
                        + " ranks per GPU on " + str(job.nodes)
@@ -297,15 +297,17 @@ cmd() {
         job.script += ("cmd \"spack load " + job.spec + "\"\n")
 
     if machine == 'frontier' or machine == 'kestrel-gpu':
-        if job.mapping == 'exawind-all-gpu' or job.mapping == 'exawind-nalu-cpu':
-            job.script += ("cmd \"srun -N" + str(job.nodes)
-                           + " -n" + str(job.nwind_ranks))
         if job.mapping == 'exawind-nalu-cpu':
             write_reorder_file(job)
             job.script += ("cmd \"export MPICH_RANK_REORDER_METHOD=3\"\n")
-            job.script += ("cmd \"export MPICH_RANK_REORDER_FILE=exawind.rank_map\"\n")
+            job.script += ("cmd \"export MPICH_RANK_REORDER_FILE=exawind.reorder_file\"\n")
 
-        job.script += ("cmd \"" + job.pre_args + "srun -N" + str(job.nodes)
+        if job.mapping == 'exawind-all-gpu':
+            job.script += ("cmd \"srun -N" + str(job.nodes)
+                           + " -n" + str(job.nwind_ranks))
+
+        else:
+            job.script += ("cmd \"" + job.pre_args + "srun -N" + str(job.nodes)
                        + " -n" + str(job.total_ranks)
                        + " --gpus-per-node=" + str(job.gpus_per_node)
                        + " --gpu-bind=closest")
@@ -462,7 +464,7 @@ def calculate_job_parameters(machine, job):
             job.ranks_per_node = 4
             job.ranks_per_gpu = 1
         elif job.mapping == 'exawind-nalu-cpu':
-            job.ranks_per_node = 124
+            job.ranks_per_node = 128
             job.ranks_per_gpu = 1
     elif machine == 'kestrel-cpu':
         job.walltime = job.minutes
@@ -610,7 +612,7 @@ def main():
         # Write the job script to be submitted
         write_job_script(machine, job, job_set)
         # Submit the job script for this job
-        submit_job_script(machine, job, job_set)
+        # submit_job_script(machine, job, job_set)
 
         job_counter += 1
 
